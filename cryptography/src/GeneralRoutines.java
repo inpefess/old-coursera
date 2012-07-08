@@ -24,8 +24,10 @@ public class GeneralRoutines {
 	public static String asciiToHexString(byte[] ascii) {
 		String hex = "";
 		for (int i = 0; i < ascii.length; i ++) {
-			int l = ascii[i] / 16;
-			int r = ascii[i] % 16;
+			int t = ascii[i];
+			if (t < 0) t += 256;
+			int l = t / 16;
+			int r = t % 16;
 			if (l < 10) hex += String.valueOf((char) ('0' + l));
 			else hex += String.valueOf((char)('a' + l - 10));
 			if (r < 10) hex += String.valueOf((char)('0' + r));
