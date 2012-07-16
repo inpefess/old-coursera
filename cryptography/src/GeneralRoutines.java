@@ -50,4 +50,18 @@ public class GeneralRoutines {
 		}
 		return y;
 	}
+	
+	public static int hex2int(char x) {
+		if (x >= '0' && x <= '9') return x - '0';
+		else return x - 'a' + 10;
+	}
+	
+	public static char int2hex(int x) {
+		if (x >= 0 && x <=9) return (char) (x + '0');
+		else return (char) (x - 10 + 'a');
+	}
+	
+	public static char xor(char x, char y) {
+		return int2hex(hex2int(x) ^ hex2int(y));
+	}
 }
