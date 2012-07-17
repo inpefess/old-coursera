@@ -3,9 +3,22 @@ import java.net.*;
 
 public class PaddingOracle {
 	private String cipherText;
+	private byte[] base;
+	private byte[] pad;
+	private byte[] msg;
+	private int curBlock;
+	private int curByte;
 	
 	public PaddingOracle (String chiperText) {
 		this.cipherText = chiperText;
+		this.base = GeneralRoutines.hexStringToAscii(cipherText);
+		this.pad = new byte[base.length];
+		this.msg = new byte[base.length];
+		for (int i = 0; i < base.length; i ++) {
+			pad[i] = msg[i] = 0;
+		}
+		curBlock = base.length / 16 - 2;
+		curByte = 15;
 	}
 	
 	private String ask (String request) {
@@ -19,27 +32,36 @@ public class PaddingOracle {
 		return "OK";
 	}
 	
-	public void guessOne (int n) {
-		String request = this.cipherText;
-		String respond;
-		char l, r, l0, r0;
-		for (int i = 0; i < 16; i ++) {
-			l0 = GeneralRoutines.int2hex(i);
-			for (int j = 0; j < 16; j ++) {
-				if (j != 1) {
-					r0 = GeneralRoutines.int2hex(j);
-					request = this.cipherText;
-					l = GeneralRoutines.xor(l0, request.charAt(request.length() - 32 - 2 * n - 2));
-					r = GeneralRoutines.xor(GeneralRoutines.int2hex(1), GeneralRoutines.xor(r0, request.charAt(request.length() - 32 - 2 * n - 1)));
-					request = request.substring(0, request.length() - 32 - 2 * n - 2) + l + r + request.substring(request.length() - 32 - 2 * n, request.length());
-					respond = this.ask(request);
-					if (!respond.equals("403")) {
-						cipherText = cipherText.substring(0, cipherText.length() - 32 - 2 * n - 2) + GeneralRoutines.int2hex(i)
-								+ GeneralRoutines.int2hex(j) + request.substring(request.length() - 32 - 2 * n, request.length());
-						return;
-					}
+	private void setPad () {
+		for (int i = 15; i >= curByte; i --) {
+			pad[16 * curBlock + i] = (byte) (16 - curByte);
+		}
+	}
+	
+	private Boolean successfulGuess () {
+		byte[] request = GeneralRoutines.xor(msg, GeneralRoutines.xor(base, pad));
+		String respond = this.ask(GeneralRoutines.asciiToHexString(request));
+		return !(respond.equals("403") || respond.equals("OK"));
+	}
+	
+	private void setMsg () {
+		msg[16 * curBlock + curByte]++;
+	}
+	
+	public void guess () {
+		Boolean success;
+		while (curBlock >= 0) {
+			while(curByte >= 0) {
+				setPad();
+				success = false;
+				while (!success) {
+					setMsg();
+					success = successfulGuess();
 				}
+				curByte --;
 			}
+			curByte = 15;
+			curBlock --;
 		}
 	}
 }
