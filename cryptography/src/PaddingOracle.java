@@ -18,7 +18,10 @@ public class PaddingOracle {
 			pad[i] = msg[i] = 0;
 		}
 		curBlock = base.length / 16 - 2;
-		curByte = 15;
+		for (int i = 15; i > 6; i --) {
+			msg[i + 16 * curBlock] = 9;
+		}
+		curByte = 6;
 	}
 	
 	private String ask (String request) {
@@ -60,6 +63,11 @@ public class PaddingOracle {
 				}
 				curByte --;
 			}
+			byte[] gg = new byte[16];
+			for (int i = 0; i < 16; i ++) {
+				gg[i] = msg[i + 16 * curBlock];
+			}
+			String ggg = GeneralRoutines.asciiToHexString(gg);
 			curByte = 15;
 			curBlock --;
 		}
