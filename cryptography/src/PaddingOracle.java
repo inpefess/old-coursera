@@ -6,22 +6,11 @@ public class PaddingOracle {
 	private byte[] base;
 	private byte[] pad;
 	private byte[] msg;
-	private int curBlock;
 	private int curByte;
+	private int blockSize = 16;
 	
 	public PaddingOracle (String chiperText) {
 		this.cipherText = chiperText;
-		this.base = GeneralRoutines.hexStringToAscii(cipherText);
-		this.pad = new byte[base.length];
-		this.msg = new byte[base.length];
-		for (int i = 0; i < base.length; i ++) {
-			pad[i] = msg[i] = 0;
-		}
-		curBlock = base.length / 16 - 2;
-		for (int i = 15; i > 6; i --) {
-			msg[i + 16 * curBlock] = 9;
-		}
-		curByte = 6;
 	}
 	
 	private String ask (String request) {
@@ -36,40 +25,72 @@ public class PaddingOracle {
 	}
 	
 	private void setPad () {
-		for (int i = 15; i >= curByte; i --) {
-			pad[16 * curBlock + i] = (byte) (16 - curByte);
+		for (int i = blockSize - 1; i >= curByte; i --) {
+			pad[i] = (byte) (blockSize - curByte);
 		}
 	}
 	
 	private Boolean successfulGuess () {
+		if (msg[curByte] == 1) return true;
 		byte[] request = GeneralRoutines.xor(msg, GeneralRoutines.xor(base, pad));
 		String respond = this.ask(GeneralRoutines.asciiToHexString(request));
 		return !(respond.equals("403") || respond.equals("OK"));
 	}
 	
 	private void setMsg () {
-		msg[16 * curBlock + curByte]++;
+		msg[curByte]--;
 	}
 	
-	public void guess () {
+	private void addPad () {
+		for (int i = curByte - 1; i >= blockSize - msg[curByte]; i --) {
+			msg[i] = msg[curByte];
+		}
+		curByte = blockSize - msg[curByte] - 1;
+	}
+
+	private void initMsgAndPad () {
+		msg = new byte[base.length];
+		pad = new byte[base.length];
+		for (int i = 0; i < base.length; i ++) {
+			msg[i] = pad[i] = 0;
+		}
+	}
+	
+	private String guessBlock (Boolean firstBlock) {
 		Boolean success;
-		while (curBlock >= 0) {
-			while(curByte >= 0) {
-				setPad();
-				success = false;
-				while (!success) {
-					setMsg();
-					success = successfulGuess();
-				}
+		curByte = blockSize - 1;
+		initMsgAndPad();
+		while(curByte >= 0) {
+			setPad();
+			msg[curByte] = 127;
+			success = false;
+			while (!success) {
+				setMsg();
+				success = successfulGuess();
+			}
+			if (firstBlock && curByte == blockSize - 1) {
+				addPad();
+			} else {
 				curByte --;
 			}
-			byte[] gg = new byte[16];
-			for (int i = 0; i < 16; i ++) {
-				gg[i] = msg[i + 16 * curBlock];
-			}
-			String ggg = GeneralRoutines.asciiToHexString(gg);
-			curByte = 15;
-			curBlock --;
 		}
+		String s = "";
+		for (int i = 0; i < blockSize; i ++) {
+			s += (char) msg[i];
+		}
+		return s;
+	}
+	
+	public String guess () {
+		int numberOfBlokcs = cipherText.length() / blockSize / 2;
+		base = GeneralRoutines.hexStringToAscii(cipherText.substring((numberOfBlokcs - 2) * 2 * blockSize, numberOfBlokcs * 2 * blockSize));
+		String s = guessBlock (true);
+		String next = "";
+		for (int i = numberOfBlokcs - 3; i >= 0; i --) {
+			base = GeneralRoutines.hexStringToAscii(cipherText.substring(i * 2 * blockSize, (i + 2) * 2 * blockSize));
+			next = guessBlock(false);
+			s = next + s;
+		}
+		return s;
 	}
 }
