@@ -45,7 +45,6 @@ public class Factorization {
 		BigInteger A = mySqrt(N.multiply(new BigInteger("24")));
 		BigInteger S = A.multiply(A).subtract(N.multiply(new BigInteger("24")));
 		BigInteger x = mySqrt(S);
-		BigInteger q = A.add(x).shiftRight(2);
 		BigInteger p = A.subtract(x).divide(new BigInteger("6"));
 		return p.toString();
 	}

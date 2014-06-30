@@ -16,6 +16,8 @@ public class VideoHash {
 			lastBlockSize = blockSize;
 			movie.add(dataBytes.clone());
 		};
+		
+		fis.close();
 	}
 	
 	public String getHash () throws NoSuchAlgorithmException {
